@@ -3,6 +3,16 @@ name = "aoc-2024"
 version = "0.1.0"
 edition = "2021"
 
+[profile.dev]
+opt-level = 1
+
+[profile.release]
+debug = true
+opt-level = 3
+codegen-units = 1
+lto = "fat"
+panic = "abort"
+
 [dev-dependencies]
 criterion = { version = "2.7.2", package = "codspeed-criterion-compat" }
 
