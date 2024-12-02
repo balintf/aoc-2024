@@ -23,3 +23,4 @@ harness = false
 [dependencies]
 memchr = "2.7.4"
 radsort = "0.1.1"
+itertools = "0.13.0"
