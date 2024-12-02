@@ -1,10 +1,10 @@
 use memchr::memchr;
 
 #[inline]
-fn parse_digits(input: &[u8], idx: usize, digit_len: usize) -> u32 {
+fn parse_digits(input: &[u8]) -> u32 {
     let mut result = 0;
-    for i in idx..idx + digit_len {
-        result = result * 10 + (unsafe { input.get_unchecked(i) } - b'0') as u32;
+    for byte in input {
+        result = result * 10 + (byte - b'0') as u32;
     }
     result
 }
@@ -12,15 +12,12 @@ fn parse_digits(input: &[u8], idx: usize, digit_len: usize) -> u32 {
 fn part1_flexible(input: &[u8], digit_len: usize) -> u64 {
     let mut left = Vec::<u32>::with_capacity(1000);
     let mut right = Vec::<u32>::with_capacity(1000);
-    let mut idx = 0;
-    while idx < input.len() {        
-        let l = parse_digits(input, idx, digit_len);
+    for chunk in input.chunks_exact(2*digit_len + 4) {        
+        let l = parse_digits(unsafe { chunk.get_unchecked(..digit_len) });
         left.push(l);
-        idx = idx + digit_len + 3;
 
-        let r =parse_digits(input, idx, digit_len);
+        let r =parse_digits(unsafe { chunk.get_unchecked(digit_len + 3..2*digit_len+3) });
         right.push(r);
-        idx = idx + digit_len + 1;
     }
 
     radsort::sort(&mut left);
@@ -32,9 +29,9 @@ fn part1_flexible(input: &[u8], digit_len: usize) -> u64 {
 }
 
 #[inline]
-fn parse_digits_5(input: &[u8], idx: usize) -> u32 {
+fn parse_digits_5(input: &[u8]) -> u32 {
     let mut result = 0;
-    for i in idx..idx + 5 {
+    for i in 0..5 {
         result = result * 10 + (unsafe { input.get_unchecked(i) } - b'0') as u32;
     }
     result
@@ -43,15 +40,11 @@ fn parse_digits_5(input: &[u8], idx: usize) -> u32 {
 fn part1_assume_length(input: &[u8]) -> u64 {
     let mut left = Vec::<u32>::with_capacity(1000);
     let mut right = Vec::<u32>::with_capacity(1000);
-    let mut idx = 0;
-    while idx < input.len() {
-        let l = parse_digits_5(input, idx);
+    for chunk in unsafe { input.as_chunks_unchecked::<14>() } {
+        let l = parse_digits_5(chunk);
         left.push(l);
-        idx += 5 + 3;
-
-        let r =parse_digits_5(input, idx);
+        let r = parse_digits_5(&chunk[8..]);
         right.push(r);
-        idx += 5 + 1;
     }
 
     radsort::sort(&mut left);
@@ -75,19 +68,16 @@ pub fn part1(input: &str) -> u64 {
 fn part2_flexible(input: &[u8], digit_len: usize) -> u64 {
     let mut left = Vec::<u32>::with_capacity(1000);
     let mut counts: Vec<u16> = vec![0; 100000];
-    let mut idx = 0;
-    while idx < input.len() {
-        let l = parse_digits(input, idx, digit_len);
+    for chunk in input.chunks_exact(2*digit_len + 4) {
+        let l = parse_digits(unsafe { chunk.get_unchecked(..digit_len) });
         left.push(l);
-        idx = idx + digit_len + 3;
 
-        let r =parse_digits(input, idx, digit_len);
+        let r =parse_digits(unsafe { chunk.get_unchecked(digit_len + 3..2*digit_len+3) });
         unsafe { *counts.get_unchecked_mut(r as usize) += 1; }
-        idx = idx + digit_len + 1;
     }
 
     left.into_iter()
-        .map(|l| l as u64 * (*unsafe {
+        .map(|l| (l as u64) * (*unsafe {
             counts.get_unchecked(l as usize)
         } as u64)).sum()
 }
@@ -95,21 +85,17 @@ fn part2_flexible(input: &[u8], digit_len: usize) -> u64 {
 fn part2_assume_length(input: &[u8]) -> u64 {
     let mut left = Vec::<u32>::with_capacity(1000);
     let mut counts: Vec<u16> = vec![0; 100000];
-    let mut idx = 0;
-    while idx < input.len() {
-        let l = parse_digits_5(input, idx);
+    for chunk in unsafe { input.as_chunks_unchecked::<14>() } {
+        let l = parse_digits_5(chunk);
         left.push(l);
-        idx = idx + 5 + 3;
 
-        let r =parse_digits_5(input, idx);
+        let r =parse_digits_5(&chunk[8..]);
         unsafe { *counts.get_unchecked_mut(r as usize) += 1; }
-        idx = idx + 5 + 1;
     }
 
-    left.into_iter()
-        .map(|l| l as u64 * (*unsafe {
-            counts.get_unchecked(l as usize)
-        } as u64)).sum()
+    left.into_iter().map(|l| (l as u64) * 
+                        (*unsafe { counts.get_unchecked(l as usize) } as u64))
+                    .sum()
 }
 
 pub fn part2(input: &str) -> u64 {
