@@ -22,4 +22,4 @@ harness = false
 
 [dependencies]
 memchr = "2.7.4"
-rustc-hash = "2.1.0"
+radsort = "0.1.1"
