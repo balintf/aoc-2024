@@ -1,15 +1,35 @@
 use std::collections::HashMap;
+use memchr::memchr;
+use rustc_hash::FxBuildHasher;
 
-pub fn part1(input: &str) -> u32 {
-    let mut left = Vec::<i32>::with_capacity(1000);
-    let mut right = Vec::<i32>::with_capacity(1000);
-    input.lines().for_each(|line| {
-        let (l, r) = line.split_at(line.find(' ').unwrap());
-        let r = r.trim_start();
+#[inline]
+fn parse_digits(input: &[u8]) -> u64 {
+    let mut result = 0;
+    for byte in input {
+        result = result * 10 + (byte - b'0') as u64;
+    }
+    result
+}
 
-        left.push(l.parse::<i32>().unwrap());
-        right.push(r.parse::<i32>().unwrap());
-    });
+pub fn part1(input: &str) -> u64 {
+    let input = input.as_bytes();
+    let mut left = Vec::<u64>::with_capacity(1000);
+    let mut right = Vec::<u64>::with_capacity(1000);
+    let mut idx = 0;
+    while idx < input.len() {
+        let space_idx = unsafe { memchr(b' ', &input[idx..]).unwrap_unchecked() };
+        let l = parse_digits(&input[idx..idx + space_idx]);
+        left.push(l);
+        idx = idx + space_idx + 1;
+        while unsafe { *input.get_unchecked(idx) } == b' ' {
+            idx += 1;
+        }
+        let newline_idx = unsafe { memchr(b'\n', &input[idx..]).unwrap_unchecked() };
+        let r =parse_digits(&input[idx..idx + newline_idx]);
+        right.push(r);
+        idx = idx + newline_idx + 1;        
+    }
+
     left.sort_unstable();
     right.sort_unstable();
     left.into_iter()
@@ -18,19 +38,51 @@ pub fn part1(input: &str) -> u32 {
         .sum()
 }
 
-pub fn part2(input: &str) -> u32 {
-    let mut left = Vec::<i32>::with_capacity(1000);
-    let mut right = HashMap::<i32, i32>::with_capacity(1000);
-    input.lines().for_each(|line| {
-        let (l, r) = line.split_at(line.find(' ').unwrap());
-        let r = r.trim_start();
-
-        left.push(l.parse::<i32>().unwrap());
-        let right_val = r.parse::<i32>().unwrap();
-        right.entry(right_val).and_modify(|e| *e += 1).or_insert(1);
-    });
+pub fn part2(input: &str) -> u64 {
+    let input = input.as_bytes();
+    let mut left = Vec::<u64>::with_capacity(1000);
+    let mut right = HashMap::<u64, u32, FxBuildHasher>::with_capacity_and_hasher(1000, FxBuildHasher::default());
+    let mut idx = 0;
+    while idx < input.len() {
+        let space_idx = unsafe { memchr(b' ', &input[idx..]).unwrap_unchecked() };
+        let l = parse_digits(&input[idx..idx + space_idx]);
+        left.push(l);
+        idx = idx + space_idx + 1;
+        while unsafe { *input.get_unchecked(idx) } == b' ' {
+            idx += 1;
+        }
+        let newline_idx = unsafe { memchr(b'\n', &input[idx..]).unwrap_unchecked() };
+        let r =parse_digits(&input[idx..idx + newline_idx]);
+        right.entry(r).and_modify(|e| *e += 1).or_insert(1);
+        idx = idx + newline_idx + 1;        
+    }
 
     left.into_iter()
-        .map(|l| right.get(&l).map(|&count| l * count).unwrap_or(0) as u32)
+        .map(|l| right.get(&l).copied().unwrap_or_default() as u64 * l)
         .sum()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn part1_example() {
+        assert_eq!(part1(include_str!("../input/day1_example.txt")), 11);
+    }
+
+    #[test]
+    fn part1_solution() {
+        assert_eq!(part1(include_str!("../input/day1.txt")), 2769675);
+    }
+
+    #[test]
+    fn part2_example() {
+        assert_eq!(part2(include_str!("../input/day1_example.txt")), 31);
+    }
+
+    #[test]
+    fn part2_solution() {
+        assert_eq!(part2(include_str!("../input/day1.txt")), 24643097);
+    }
 }
