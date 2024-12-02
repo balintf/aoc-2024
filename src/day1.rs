@@ -38,18 +38,21 @@ fn parse_digits_5(input: &[u8]) -> u32 {
 }
 
 fn part1_assume_length(input: &[u8]) -> u64 {
-    let mut left = Vec::<u32>::with_capacity(1000);
-    let mut right = Vec::<u32>::with_capacity(1000);
-    for chunk in unsafe { input.as_chunks_unchecked::<14>() } {
+    let lines = input.len() / 14;
+    let mut left_uninit = Box::<[u32]>::new_uninit_slice(lines);
+    let mut right_uninit = Box::<[u32]>::new_uninit_slice(lines);
+    for (i, chunk) in unsafe { input.as_chunks_unchecked::<14>() }.iter().enumerate() {
         let l = parse_digits_5(chunk);
-        left.push(l);
+        unsafe { left_uninit.get_unchecked_mut(i).write(l); }
         let r = parse_digits_5(&chunk[8..]);
-        right.push(r);
+        unsafe { right_uninit.get_unchecked_mut(i).write(r); }
     }
+    let mut left = unsafe  { left_uninit.assume_init() };
+    let mut right = unsafe { right_uninit.assume_init() };
 
     radsort::sort(&mut left);
     radsort::sort(&mut right);
-    left.into_iter()
+    IntoIterator::into_iter(left)
         .zip(right)
         .map(|(l, r)| l.abs_diff(r) as u64)
         .sum::<u64>()
@@ -83,17 +86,19 @@ fn part2_flexible(input: &[u8], digit_len: usize) -> u64 {
 }
 
 fn part2_assume_length(input: &[u8]) -> u64 {
-    let mut left = Vec::<u32>::with_capacity(1000);
+    let lines = input.len() / 14;
+    let mut left_uninit = Box::<[u32]>::new_uninit_slice(lines);
     let mut counts: Vec<u16> = vec![0; 100000];
-    for chunk in unsafe { input.as_chunks_unchecked::<14>() } {
+    for (i, chunk) in unsafe { input.as_chunks_unchecked::<14>() }.iter().enumerate() {
         let l = parse_digits_5(chunk);
-        left.push(l);
+        unsafe { left_uninit.get_unchecked_mut(i).write(l); }
 
         let r =parse_digits_5(&chunk[8..]);
         unsafe { *counts.get_unchecked_mut(r as usize) += 1; }
     }
 
-    left.into_iter().map(|l| (l as u64) * 
+    let left = unsafe { left_uninit.assume_init() };
+    IntoIterator::into_iter(left).map(|l| (l as u64) * 
                         (*unsafe { counts.get_unchecked(l as usize) } as u64))
                     .sum()
 }
