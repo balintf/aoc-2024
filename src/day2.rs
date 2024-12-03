@@ -1,27 +1,57 @@
 use itertools::Itertools;
+use std::mem::MaybeUninit;
+
+#[inline]
+fn parse_line<'a>(input: &[u8], index: &mut usize, data_buffer: &'a mut [MaybeUninit<i32>; 16]) -> &'a mut [i32] {
+    let mut len = 0;
+    let mut x = 0;
+    let mut current = unsafe { *input.get_unchecked(*index) };
+    *index += 1;
+    loop {
+        match current {
+            b'\n' => {
+                unsafe { data_buffer.get_unchecked_mut(len).as_mut_ptr().write(x) };
+                len += 1;
+                break;
+            },
+            b' ' => {
+                unsafe { data_buffer.get_unchecked_mut(len).as_mut_ptr().write(x) };
+                len += 1;
+                x = 0;
+            }
+            _ => { 
+                x = x * 10 + (current - b'0') as i32;
+            }
+        }
+        current = unsafe { *input.get_unchecked(*index) };
+        *index += 1;
+    }
+    unsafe { std::mem::transmute(data_buffer.get_unchecked_mut(..len)) }
+}
 
 pub fn part1(input: &str) -> u32 {
+    let input = input.as_bytes();
     let mut result = 0;
-    let mut data = Vec::with_capacity(16);
-    for line in input.lines() {
-        let mut is_ok = true;
-        data.clear();
-        data.extend(line.split_ascii_whitespace().map(|x| unsafe { x.parse::<i32>().unwrap_unchecked() }));
+    let mut data_buffer = [const { MaybeUninit::<i32>::uninit() }; 16];
+    let mut index = 0;
+    while index < input.len() {
+        let data = parse_line(input, &mut index, &mut data_buffer);
         let first_diff = unsafe { *data.get_unchecked(1) - *data.get_unchecked(0) };
         if first_diff == 0 || first_diff.abs() > 3 {
             continue;
         }
+        let mut is_ok = true;
         if first_diff > 0 {
-            for (x, y) in unsafe { data.get_unchecked(1..) }.iter().tuple_windows() {
-                let diff = y - x;
+            for i in 2..data.len() {
+                let diff = unsafe { data.get_unchecked(i) } - unsafe { data.get_unchecked(i-1) };
                 if diff <= 0 || diff > 3 {
                     is_ok = false;
                     break;
                 }
             }
         } else {
-            for (x, y) in unsafe { data.get_unchecked(1..) }.iter().tuple_windows() {
-                let diff = y - x;
+            for i in 2..data.len() {
+                let diff = unsafe { data.get_unchecked(i) } - unsafe { data.get_unchecked(i-1) };
                 if diff >= 0 || diff < -3 {
                     is_ok = false;
                     break;
