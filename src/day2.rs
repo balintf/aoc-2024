@@ -37,7 +37,7 @@ pub fn part1(input: &str) -> u32 {
     while index < input.len() {
         let data = parse_line(input, &mut index, &mut data_buffer);
         unsafe {
-            assert_unchecked(data.len() >= 2);
+            assert_unchecked(data.len() >= 5);
         }
         let first_diff = data[1] - data[0];
         if first_diff == 0 || first_diff.abs() > 3 {
@@ -82,32 +82,37 @@ pub fn part2(input: &str) -> u32 {
         for i in 0..data.len() {
             let mut pos_diffs = 0;
             let mut neg_diffs = 0;
-            let mut is_ok = true;
-            for j in 0..data.len()-1 {
-                let mut x = data[j];
-                let mut y = data[j+1];
+            let mut zero_or_big_diffs = 0;
+            let j_range = if i == 0 {
+                1..data.len()-1
+            } else if i == data.len()-1 {
+                0..data.len()-2
+            } else {
+                0..data.len()-1
+            };
+            for j in j_range {
+                let mut x = unsafe { *data.get_unchecked(j) };
+                let mut y = unsafe { *data.get_unchecked(j+1) };
                 if i == j  {
-                    if j == 0 {
-                        continue;
-                    }
                     x = unsafe { *data.get_unchecked(j-1) };
                 } else if i == j+1 {
-                    if j + 2 == data.len() {
-                        continue;
-                    }
                     y = unsafe { *data.get_unchecked(j+2) };
                 }
                 let diff = y - x;
-                if diff > 0  && diff < 4 {
+                if diff > 0 {
                     pos_diffs += 1;
-                } else if diff < 0 && diff > -4 {
+                } else if diff < 0 {
                     neg_diffs += 1;
                 } else {
-                    is_ok = false;
+                    zero_or_big_diffs += 1;
+                    break;
+                }
+                if diff.abs() > 3 {
+                    zero_or_big_diffs += 1;
                     break;
                 }
             }
-            if is_ok && (pos_diffs == 0 || neg_diffs == 0) {
+            if zero_or_big_diffs == 0 && (pos_diffs == 0 || neg_diffs == 0) {
                 result += 1;
                 break;
             }
