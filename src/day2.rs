@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use std::mem::MaybeUninit;
+use std::{hint::assert_unchecked, mem::MaybeUninit};
 
 #[inline]
 fn parse_line<'a>(input: &[u8], index: &mut usize, data_buffer: &'a mut [MaybeUninit<i32>; 16]) -> &'a mut [i32] {
@@ -8,6 +8,7 @@ fn parse_line<'a>(input: &[u8], index: &mut usize, data_buffer: &'a mut [MaybeUn
     let mut current = unsafe { *input.get_unchecked(*index) };
     *index += 1;
     loop {
+        unsafe { assert_unchecked(len < 16); }
         match current {
             b'\n' => {
                 unsafe { data_buffer.get_unchecked_mut(len).as_mut_ptr().write(x) };
@@ -36,14 +37,17 @@ pub fn part1(input: &str) -> u32 {
     let mut index = 0;
     while index < input.len() {
         let data = parse_line(input, &mut index, &mut data_buffer);
-        let first_diff = unsafe { *data.get_unchecked(1) - *data.get_unchecked(0) };
+        unsafe {
+            assert_unchecked(data.len() >= 2);
+        }
+        let first_diff = data[1] - data[0];
         if first_diff == 0 || first_diff.abs() > 3 {
             continue;
         }
         let mut is_ok = true;
         if first_diff > 0 {
             for i in 2..data.len() {
-                let diff = unsafe { data.get_unchecked(i) } - unsafe { data.get_unchecked(i-1) };
+                let diff = data[i] - data[i-1];
                 if diff <= 0 || diff > 3 {
                     is_ok = false;
                     break;
@@ -51,7 +55,7 @@ pub fn part1(input: &str) -> u32 {
             }
         } else {
             for i in 2..data.len() {
-                let diff = unsafe { data.get_unchecked(i) } - unsafe { data.get_unchecked(i-1) };
+                let diff = data[i] - data[i-1];
                 if diff >= 0 || diff < -3 {
                     is_ok = false;
                     break;
