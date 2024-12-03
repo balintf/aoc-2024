@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use std::{hint::assert_unchecked, mem::MaybeUninit};
 
 #[inline]
@@ -71,16 +70,33 @@ pub fn part1(input: &str) -> u32 {
 }
 
 pub fn part2(input: &str) -> u32 {
+    let input = input.as_bytes();
     let mut result = 0;
-    let mut data = Vec::with_capacity(16);
-    for line in input.lines() {
-        data.clear();
-        data.extend(line.split_ascii_whitespace().map(|x| unsafe { x.parse::<i32>().unwrap_unchecked() }));
+    let mut data_buffer = [const { MaybeUninit::<i32>::uninit() }; 16];
+    let mut index = 0;
+    while index < input.len() {
+        let data = parse_line(input, &mut index, &mut data_buffer);
+        unsafe {
+            assert_unchecked(data.len() >= 5);
+        }
         for i in 0..data.len() {
             let mut pos_diffs = 0;
             let mut neg_diffs = 0;
             let mut is_ok = true;
-            for (x, y) in data.iter().enumerate().filter_map(|(j, d)| if i == j { None } else { Some(*d) }).tuple_windows() {
+            for j in 0..data.len()-1 {
+                let mut x = data[j];
+                let mut y = data[j+1];
+                if i == j  {
+                    if j == 0 {
+                        continue;
+                    }
+                    x = unsafe { *data.get_unchecked(j-1) };
+                } else if i == j+1 {
+                    if j + 2 == data.len() {
+                        continue;
+                    }
+                    y = unsafe { *data.get_unchecked(j+2) };
+                }
                 let diff = y - x;
                 if diff > 0  && diff < 4 {
                     pos_diffs += 1;
