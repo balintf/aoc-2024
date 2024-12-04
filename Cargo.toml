@@ -3,9 +3,6 @@ name = "aoc-2024"
 version = "0.1.0"
 edition = "2021"
 
-[profile.dev]
-opt-level = 1
-
 [profile.release]
 debug = true
 opt-level = 3
@@ -24,3 +21,4 @@ harness = false
 memchr = "2.7.4"
 radsort = "0.1.1"
 itertools = "0.13.0"
+regex = "1.11.1"
