@@ -3,9 +3,9 @@ use memchr::memchr;
 #[inline]
 fn vert_match(input: &[u8], pos: usize, line_len: usize) -> bool {
     if pos + 3*line_len+3 < input.len()
-       && input[pos + line_len + 1] == b'M'
-       && input[pos + 2*line_len + 2] == b'A'
-       && input[pos + 3*line_len + 3] == b'S'
+       && unsafe { *input.get_unchecked(pos + line_len + 1) } == b'M'
+       && unsafe { *input.get_unchecked(pos + 2*line_len + 2) } == b'A'
+       && unsafe { *input.get_unchecked(pos + 3*line_len + 3) } == b'S'
     {
         return true;
     }
@@ -15,9 +15,9 @@ fn vert_match(input: &[u8], pos: usize, line_len: usize) -> bool {
 #[inline]
 fn vert_match_inverted(input: &[u8], pos: usize, line_len: usize) -> bool {
     if pos >= 3*line_len-3
-       && input[pos - line_len-1] == b'M'
-       && input[pos - 2*line_len-2] == b'A'
-       && input[pos - 3*line_len-3] == b'S'
+       && unsafe { *input.get_unchecked(pos - line_len-1) } == b'M'
+       && unsafe { *input.get_unchecked(pos - 2*line_len-2) } == b'A'
+       && unsafe { *input.get_unchecked(pos - 3*line_len-3) } == b'S'
     {
         return true;
     }
@@ -27,9 +27,9 @@ fn vert_match_inverted(input: &[u8], pos: usize, line_len: usize) -> bool {
 #[inline]
 fn diag_match_rd(input: &[u8], pos: usize, line_len: usize) -> bool {
     if pos + 3*line_len+6 < input.len()
-       && input[pos + line_len + 2] == b'M'
-       && input[pos + 2*line_len + 4] == b'A'
-       && input[pos + 3*line_len + 6] == b'S'
+       && unsafe { *input.get_unchecked(pos + line_len + 2) } == b'M'
+       && unsafe { *input.get_unchecked(pos + 2*line_len + 4) } == b'A'
+       && unsafe { *input.get_unchecked(pos + 3*line_len + 6) } == b'S'
     {
         return true;
     }
@@ -39,9 +39,9 @@ fn diag_match_rd(input: &[u8], pos: usize, line_len: usize) -> bool {
 #[inline]
 fn diag_match_ld(input: &[u8], pos: usize, line_len: usize) -> bool {
     if pos + 3*line_len-4 < input.len()
-       && input[pos + line_len] == b'M'
-       && input[pos + 2*line_len] == b'A'
-       && input[pos + 3*line_len] == b'S'
+       && unsafe { *input.get_unchecked(pos + line_len) } == b'M'
+       && unsafe { *input.get_unchecked(pos + 2*line_len) } == b'A'
+       && unsafe { *input.get_unchecked(pos + 3*line_len) } == b'S'
     {
         return true;
     }
@@ -51,9 +51,9 @@ fn diag_match_ld(input: &[u8], pos: usize, line_len: usize) -> bool {
 #[inline]
 fn diag_match_ru(input: &[u8], pos: usize, line_len: usize) -> bool {
     if pos >= 3*line_len
-       && input[pos - line_len] == b'M'
-       && input[pos - 2*line_len] == b'A'
-       && input[pos - 3*line_len] == b'S'
+       && unsafe { *input.get_unchecked(pos - line_len) } == b'M'
+       && unsafe { *input.get_unchecked(pos - 2*line_len) } == b'A'
+       && unsafe { *input.get_unchecked(pos - 3*line_len) } == b'S'
     {
         return true;
     }
@@ -63,9 +63,9 @@ fn diag_match_ru(input: &[u8], pos: usize, line_len: usize) -> bool {
 #[inline]
 fn diag_match_lu(input: &[u8], pos: usize, line_len: usize) -> bool {
     if pos >= 3*line_len+6
-       && input[pos - line_len - 2] == b'M'
-       && input[pos - 2*line_len - 4] == b'A'
-       && input[pos - 3*line_len - 6] == b'S'
+       && unsafe { *input.get_unchecked(pos - line_len - 2) } == b'M'
+       && unsafe { *input.get_unchecked(pos - 2*line_len - 4) } == b'A'
+       && unsafe { *input.get_unchecked(pos - 3*line_len - 6) } == b'S'
     {
         return true;
     }
@@ -77,10 +77,10 @@ pub fn part1(input: &str) -> u32 {
     let line_len = unsafe { memchr(b'\n', input).unwrap_unchecked() };
     let mut result = 0;
     for pos in memchr::memchr_iter(b'X', input) {
-        if pos+3 < input.len() && &input[pos..pos+4] == b"XMAS" {
+        if pos+3 < input.len() && unsafe { input.get_unchecked(pos..pos+4) } == b"XMAS" {
             result += 1;
         }
-        if pos >= 3 && &input[pos-3..pos+1] == b"SAMX" {
+        if pos >= 3 && unsafe { input.get_unchecked(pos-3..pos+1) } == b"SAMX" {
             result += 1;
         }
         if vert_match(input, pos, line_len) {
@@ -119,10 +119,10 @@ pub fn part2(input: &str) -> u32 {
     for pos in memchr::memchr_iter(b'A', input) {
         if pos >= line_len + 2 && pos + line_len + 2 < input.len() {
             let corners: [u8; 4] = [
-                input[pos - line_len - 2],
-                input[pos - line_len],
-                input[pos + line_len],
-                input[pos + line_len + 2],
+                unsafe { *input.get_unchecked(pos - line_len - 2) },
+                unsafe { *input.get_unchecked(pos - line_len) },
+                unsafe { *input.get_unchecked(pos + line_len) },
+                unsafe { *input.get_unchecked(pos + line_len + 2) },
             ];
             for pattern in PATTERNS {
                 if pattern == corners {
