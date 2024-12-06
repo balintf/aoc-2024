@@ -1,3 +1,5 @@
+use std::mem::{MaybeUninit, transmute};
+
 use memchr::memchr;
 
 pub fn part1(input: &str) -> u32 {
@@ -18,7 +20,7 @@ pub fn part1(input: &str) -> u32 {
         *unsafe { table.get_unchecked_mut(table_idx as usize) } = 1;
         idx += 6;
     }
-    let mut pages = [0u8; 128];
+    let mut pages = [const { MaybeUninit::<u8>::uninit()}; 128];
     while idx < input.len() {
         let line_len = unsafe { memchr(b'\n', input.get_unchecked(idx..)).unwrap_unchecked() };
         let mut num_len = 0;
@@ -26,12 +28,12 @@ pub fn part1(input: &str) -> u32 {
         while pos < idx + line_len {
             let number = unsafe { *input.get_unchecked(pos) } as u32 * 10
                 + unsafe { *input.get_unchecked(pos+1) } as u32 - b'0' as u32 * 11;
-            *unsafe { pages.get_unchecked_mut(num_len) } =  number as u8;
+            unsafe { pages.get_unchecked_mut(num_len).write(number as u8) };
             num_len += 1;
             pos += 3;
         }
 
-        let pages = unsafe { pages.get_unchecked(..num_len) };
+        let pages: &[u8] = unsafe { transmute(pages.get_unchecked(..num_len)) };
         if pages.is_sorted_by(|a, b| 
             unsafe { *table.get_unchecked((((*a as u32) << 7) + *b as u32) as usize) } == 1
         ) {
@@ -60,7 +62,7 @@ pub fn part2(input: &str) -> u32 {
         *unsafe { table.get_unchecked_mut(table_idx as usize) } = 1;
         idx += 6;
     }
-    let mut pages = [0u8; 128];
+    let mut pages = [const { MaybeUninit::<u8>::uninit() }; 128];
     while idx < input.len() {
         let line_len = unsafe { memchr(b'\n', input.get_unchecked(idx..)).unwrap_unchecked() };
         let mut num_len = 0;
@@ -68,12 +70,12 @@ pub fn part2(input: &str) -> u32 {
         while pos < idx + line_len {
             let number = unsafe { *input.get_unchecked(pos) } as u32 * 10
                 + unsafe { *input.get_unchecked(pos+1) } as u32 - b'0' as u32 * 11;
-            *unsafe { pages.get_unchecked_mut(num_len) } = number as u8;
+            unsafe { pages.get_unchecked_mut(num_len).write(number as u8) };
             num_len += 1;
             pos += 3;
         }
 
-        let pages = unsafe { pages.get_unchecked_mut(..num_len) };
+        let pages: &mut [u8] = unsafe { transmute(pages.get_unchecked_mut(..num_len)) };
         if !pages.is_sorted_by(|a, b| unsafe { *table.get_unchecked((((*a as u32) << 7) + *b as u32) as usize) } == 1) {
             let (_, x, _) = pages.select_nth_unstable_by(num_len/2, |a, b| {
                 if *a == *b {
