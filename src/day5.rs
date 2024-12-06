@@ -30,20 +30,14 @@ pub fn part1(input: &str) -> u32 {
             num_len += 1;
             pos += 3;
         }
-        let mut is_ok = true;
-        'outer: for i in 0..num_len {
-            let first = (unsafe { *pages.get_unchecked(i) } as u32) << 7;
-            for j in i+1..num_len {
-                if unsafe { *table.get_unchecked((first + *pages.get_unchecked(j) as u32) as usize) } == 0 {
-                    is_ok = false;
-                    break 'outer;
-                }
-            }
-        }
-        idx += line_len + 1;
-        if is_ok {
+
+        let pages = unsafe { pages.get_unchecked(..num_len) };
+        if pages.is_sorted_by(|a, b| 
+            unsafe { *table.get_unchecked((((*a as u32) << 7) + *b as u32) as usize) } == 1
+        ) {
             result += unsafe { *pages.get_unchecked(num_len/2) } as u32;
         }
+        idx += line_len + 1;
     }
     result
 }
@@ -78,25 +72,22 @@ pub fn part2(input: &str) -> u32 {
             num_len += 1;
             pos += 3;
         }
-        let mut is_ok = true;
-        for i in 0..num_len {
-            let mut first = (unsafe { *pages.get_unchecked(i) } as u32) << 7;
-            let mut j = i+1;
-            while j < num_len {
-                if unsafe { *table.get_unchecked((first + *pages.get_unchecked(j) as u32) as usize) } == 0 {
-                    is_ok = false;
-                    first = (unsafe { *pages.get_unchecked(j) } as u32) << 7;
-                    unsafe { pages.swap_unchecked(i, j) };
-                    j = i+1;
+
+        let pages = unsafe { pages.get_unchecked_mut(..num_len) };
+        if !pages.is_sorted_by(|a, b| unsafe { *table.get_unchecked((((*a as u32) << 7) + *b as u32) as usize) } == 1) {
+            let (_, x, _) = pages.select_nth_unstable_by(num_len/2, |a, b| {
+                if *a == *b {
+                    std::cmp::Ordering::Equal
+                } else if unsafe { *table.get_unchecked((((*a as u32) << 7) + *b as u32) as usize) } == 1 {
+                    std::cmp::Ordering::Less
                 } else {
-                    j += 1;
+                    std::cmp::Ordering::Greater
                 }
-            }
+            });
+            result += *x as u32;
         }
+
         idx += line_len + 1;
-        if !is_ok {
-            result += unsafe { *pages.get_unchecked(num_len/2) } as u32;
-        }
     }
     result
 }
