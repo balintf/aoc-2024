@@ -1,4 +1,5 @@
 #![feature(slice_as_chunks)]
+#![feature(slice_swap_unchecked)]
 #![allow(clippy::comparison_chain)]
 
 pub mod day1;
